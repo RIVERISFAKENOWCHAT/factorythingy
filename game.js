@@ -1,7 +1,10 @@
-const TILE = 48;
-const W = 20;
-const H = 14;
+const TILE = 32;
+const W = 48;
+const H = 30;
+
 const canvas = document.getElementById('game');
+canvas.width = W * TILE;
+canvas.height = H * TILE;
 const ctx = canvas.getContext('2d');
 
 const dirs = ['up', 'right', 'down', 'left'];
@@ -11,63 +14,119 @@ const turnLeft = (d) => dirs[(dirs.indexOf(d) + 3) % 4];
 const turnRight = (d) => dirs[(dirs.indexOf(d) + 1) % 4];
 
 const oreTypes = {
-  copper_ore: { color: '#c27648', label: 'Copper' },
+  copper: { color: '#c27648', label: 'Copper' },
   coal: { color: '#111', label: 'Coal' },
-  iron_ore: { color: '#8e98a7', label: 'Iron' },
-  titanium_ore: { color: '#4f74ff', label: 'Titanium' },
+  iron: { color: '#8e98a7', label: 'Iron' },
+  titanium: { color: '#4f74ff', label: 'Titanium' },
   thirite: { color: '#ff58c8', label: 'Thirite' },
   orium: { color: '#60ff8f', label: 'Orium (Rare)' },
 };
 
 const recipes = {
   plank_builder: { in: { wood: 2 }, out: { plank: 1 } },
-  graphite_compressor: { in: { coal: 1, iron_ore: 1 }, out: { graphite: 2 } },
-  wire_creator: { in: { copper_ore: 1, iron_ore: 1 }, out: { wire: 4 } },
-  cog_maker: { in: { iron_ore: 3, copper_ore: 2 }, out: { cog: 3 } },
-  plate_press: { in: { iron_ore: 2 }, out: { iron_plate: 2 } },
-  rod_extruder: { in: { iron_ore: 1 }, out: { rod: 2 } },
+  graphite_compressor: { in: { coal: 1, iron: 1 }, out: { graphite: 2 } },
+  wire_creator: { in: { copper: 1, iron: 1 }, out: { wire: 4 } },
+  cog_maker: { in: { iron: 3, copper: 2 }, out: { cog: 3 } },
+  plate_press: { in: { iron: 2 }, out: { iron_plate: 2 } },
+  rod_extruder: { in: { iron: 1 }, out: { rod: 2 } },
   pipe_assembler: { in: { rod: 2 }, out: { pipe: 1 } },
   frame_constructor: { in: { iron_plate: 4, rod: 2 }, out: { frame: 1 } },
   circuit_printer: { in: { wire: 2, graphite: 1 }, out: { circuit: 1 } },
   reinforced_plank_builder: { in: { plank: 2, iron_plate: 1 }, out: { reinforced_plank: 1 } },
   industrial_cog_press: { in: { steel: 3, cog: 2 }, out: { heavy_cog: 2 } },
-  battery_maker: { in: { graphite: 1, copper_ore: 1 }, out: { battery: 1 } },
+  battery_maker: { in: { graphite: 1, copper: 1 }, out: { battery: 1 } },
   motor_assembler: { in: { cog: 2, wire: 2 }, out: { motor: 1 } },
   fuel_processor: { in: { coal: 2, refined_carbon: 1 }, out: { fuel_block: 1 } },
-  titanium_frame_builder: { in: { titanium_ore: 2, steel: 2 }, out: { light_frame: 1 } },
+  titanium_frame_builder: { in: { titanium: 2, steel: 2 }, out: { light_frame: 1 } },
   microchip_fabricator: { in: { circuit: 2, graphite: 1 }, out: { microchip: 1 } },
   servo_builder: { in: { motor: 1, circuit: 1 }, out: { servo: 1 } },
-  cooling_unit_assembler: { in: { pipe: 2, titanium_ore: 1 }, out: { cooling_unit: 1 } },
+  cooling_unit_assembler: { in: { pipe: 2, titanium: 1 }, out: { cooling_unit: 1 } },
   reactor_core_press: { in: { fuel_block: 2, light_frame: 1 }, out: { reactor_core: 1 } },
   power_cell_factory: { in: { battery: 2, microchip: 1 }, out: { power_cell: 1 } },
-  composite_forge: { in: { titanium_ore: 1, steel: 1 }, out: { composite_alloy: 1 } },
-  thirite_stabilizer: { in: { thirite: 2, titanium_ore: 1 }, out: { stabilized_crystal: 1 } },
+  composite_forge: { in: { titanium: 1, steel: 1 }, out: { composite_alloy: 1 } },
+  thirite_stabilizer: { in: { thirite: 2, titanium: 1 }, out: { stabilized_crystal: 1 } },
   orium_infuser: { in: { orium: 1, power_cell: 1 }, out: { orium_core: 1 } },
   quantum_assembler: { in: { orium_core: 1, microchip: 1, composite_alloy: 1 }, out: { quantum_core: 1 } },
 };
 
+const buildingCosts = {
+  miner: { iron: 10, copper: 5 },
+  conveyor: { iron: 1 },
+  router: { iron: 2, copper: 1 },
+  sorter: { iron_plate: 2, wire: 2 },
+  chopper: { iron: 8, plank: 4 },
+  plank_builder: { iron: 10, plank: 5 },
+  graphite_compressor: { iron: 8, iron_plate: 2 },
+  wire_creator: { iron: 6, copper: 4 },
+  cog_maker: { iron: 8, copper: 4, plank: 2 },
+  plate_press: { iron: 12, cog: 2 },
+  rod_extruder: { iron: 8, cog: 1 },
+  pipe_assembler: { iron_plate: 6, rod: 2 },
+  frame_constructor: { iron_plate: 10, rod: 4, cog: 2 },
+  circuit_printer: { wire: 6, graphite: 2, iron_plate: 2 },
+  reinforced_plank_builder: { iron_plate: 4, plank: 4 },
+  industrial_cog_press: { steel: 6, cog: 4, frame: 1 },
+  battery_maker: { graphite: 4, copper: 4, iron_plate: 2 },
+  motor_assembler: { cog: 4, wire: 4, frame: 1 },
+  fuel_processor: { steel: 4, graphite: 2 },
+  titanium_frame_builder: { titanium: 6, steel: 4, frame: 2 },
+  microchip_fabricator: { circuit: 6, graphite: 4, frame: 1 },
+  servo_builder: { motor: 4, circuit: 4, frame: 1 },
+  cooling_unit_assembler: { pipe: 4, titanium: 4, steel: 2 },
+  reactor_core_press: { steel: 6, light_frame: 2, power_cell: 2 },
+  power_cell_factory: { battery: 4, microchip: 2, frame: 1 },
+  composite_forge: { titanium: 4, steel: 4, frame: 1 },
+  thirite_stabilizer: { steel: 6, titanium: 2, microchip: 1 },
+  orium_infuser: { light_frame: 4, power_cell: 2, servo: 1 },
+  quantum_assembler: { composite_alloy: 6, orium_core: 2, microchip: 2, reactor_core: 1 },
+};
+
+
+const upgradeAndRequirementData = {
+  miner: { level2: { iron_plate: 5, cog: 2 }, level3: { steel: 10, circuit: 5 } },
+  conveyor: { fast_conveyor: { iron_plate: 1, wire: 1 } },
+  chopper: { level2: { iron_plate: 4, cog: 2 } },
+  requirements: {
+    frame_constructor: ['power'],
+    circuit_printer: ['power'],
+    industrial_cog_press: ['power'],
+    battery_maker: ['power'],
+    motor_assembler: ['power'],
+    fuel_processor: ['power'],
+    titanium_frame_builder: ['power', 'coolant'],
+    microchip_fabricator: ['power', 'coolant'],
+    servo_builder: ['power', 'coolant'],
+    cooling_unit_assembler: ['power'],
+    reactor_core_press: ['power', 'heavy_coolant'],
+    power_cell_factory: ['power', 'coolant'],
+    composite_forge: ['power'],
+    thirite_stabilizer: ['power', 'coolant'],
+    orium_infuser: ['power', 'advanced_coolant'],
+    quantum_assembler: ['power', 'high_coolant', 'needs_2_cooling_units_nearby'],
+  },
+};
+
 const buildings = [
-  { key: 'core', name: 'Core', color: '#2d73ff', shape: 'square', category: 'basic' },
-  { key: 'miner', name: 'Miner', color: '#777', shape: 'triangle', category: 'basic' },
-  { key: 'conveyor', name: 'Conveyor', color: '#666', shape: 'rect', category: 'basic' },
-  { key: 'router', name: 'Router', color: '#000', shape: 'square', category: 'basic' },
-  { key: 'sorter', name: 'Sorter', color: '#000', shape: 'sorter', category: 'basic' },
-  { key: 'chopper', name: 'Chopper', color: '#7e7e7e', shape: 'chopper', category: 'basic' },
-  ...Object.keys(recipes).map((k) => ({ key: k, name: k.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase()), color: '#555', shape: 'factory', category: 'factory' })),
+  { key: 'core', name: 'Core' },
+  { key: 'miner', name: 'Miner' },
+  { key: 'conveyor', name: 'Conveyor' },
+  { key: 'router', name: 'Router' },
+  { key: 'sorter', name: 'Sorter' },
+  { key: 'chopper', name: 'Chopper' },
+  ...Object.keys(recipes).map((k) => ({ key: k, name: k.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) })),
 ];
 
-const byKey = Object.fromEntries(buildings.map(b => [b.key, b]));
 const factorySet = new Set(Object.keys(recipes));
-const transportSet = new Set(['conveyor', 'router', 'sorter']);
+const coreStart = { x: Math.floor(W / 2), y: Math.floor(H / 2) };
 
 const state = {
-  selected: 'core',
+  selected: 'miner',
   rotation: 'right',
   erase: false,
+  message: '',
   grid: Array.from({ length: H }, () => Array.from({ length: W }, () => null)),
   deposits: new Map(),
   trees: new Set(),
-  coreInventory: {},
 };
 
 function key(x, y) { return `${x},${y}`; }
@@ -81,47 +140,56 @@ function makeBuilding(type, dir) {
     queue: [],
     storage: {},
     roundRobin: 0,
-    selectedItem: 'iron_ore',
-    progress: 0,
-    carry: null,
+    selectedItem: 'iron',
   };
 }
 
+state.grid[coreStart.y][coreStart.x] = makeBuilding('core', 'right');
+Object.assign(state.grid[coreStart.y][coreStart.x].storage, { wood: 50, copper: 50, iron: 50 });
+
 function generateMap() {
   const addDeposits = (type, count) => {
-    for (let i = 0; i < count; i += 1) {
+    let placed = 0;
+    while (placed < count) {
       const x = Math.floor(Math.random() * W);
       const y = Math.floor(Math.random() * H);
-      if (!state.deposits.has(key(x, y))) state.deposits.set(key(x, y), type);
+      const k = key(x, y);
+      if ((x === coreStart.x && y === coreStart.y) || state.deposits.has(k)) continue;
+      state.deposits.set(k, type);
+      placed += 1;
     }
   };
 
-  addDeposits('copper_ore', 34);
-  addDeposits('coal', 34);
-  addDeposits('iron_ore', 40);
-  addDeposits('titanium_ore', 24);
-  addDeposits('thirite', 15);
-  addDeposits('orium', 6);
+  addDeposits('copper', 45);
+  addDeposits('coal', 40);
+  addDeposits('iron', 50);
+  addDeposits('titanium', 20);
+  addDeposits('thirite', 10);
+  addDeposits('orium', 4);
 
-  for (let i = 0; i < 70; i += 1) {
+  let treeCount = 0;
+  while (treeCount < 90) {
     const x = Math.floor(Math.random() * W);
     const y = Math.floor(Math.random() * H);
-    if (!state.deposits.has(key(x, y))) state.trees.add(key(x, y));
+    const k = key(x, y);
+    if ((x === coreStart.x && y === coreStart.y) || state.deposits.has(k) || state.trees.has(k)) continue;
+    state.trees.add(k);
+    treeCount += 1;
   }
 }
 
 generateMap();
 
 function addItem(store, item, qty = 1) { store[item] = (store[item] || 0) + qty; }
-function hasInputs(store, needs) { return Object.entries(needs).every(([k, v]) => (store[k] || 0) >= v); }
-function consumeInputs(store, needs) { Object.entries(needs).forEach(([k, v]) => { store[k] -= v; }); }
-
+function hasResources(store, needs) { return Object.entries(needs || {}).every(([k, v]) => (store[k] || 0) >= v); }
+function spendResources(store, needs) { Object.entries(needs || {}).forEach(([k, v]) => { store[k] -= v; }); }
 function getB(x, y) { return inside(x, y) ? state.grid[y][x] : null; }
+function getCore() { return state.grid[coreStart.y][coreStart.x]; }
 
 function pushTo(b, item) {
   if (!b) return false;
   if (b.type === 'core') {
-    addItem(state.coreInventory, item, 1);
+    addItem(b.storage, item, 1);
     return true;
   }
   b.queue.push(item);
@@ -134,13 +202,40 @@ function pullFromOutput(x, y) {
   return b.queue.shift();
 }
 
+function setMessage(msg) {
+  state.message = msg;
+  const el = document.getElementById('message');
+  if (el) el.textContent = msg;
+}
+
+function costLabel(type) {
+  const cost = buildingCosts[type];
+  if (!cost) return 'Free';
+  return Object.entries(cost).map(([item, qty]) => `${qty} ${item}`).join(', ');
+}
+
 function place(x, y) {
   if (!inside(x, y)) return;
+  if (x === coreStart.x && y === coreStart.y) {
+    setMessage('Core is permanent and cannot be replaced.');
+    return;
+  }
+
   if (state.erase) {
     state.grid[y][x] = null;
     return;
   }
+
+  const core = getCore();
+  const cost = buildingCosts[state.selected];
+  if (!hasResources(core.storage, cost)) {
+    setMessage(`Not enough resources for ${state.selected}. Need: ${costLabel(state.selected)}`);
+    return;
+  }
+
+  spendResources(core.storage, cost);
   state.grid[y][x] = makeBuilding(state.selected, state.rotation);
+  setMessage(`Placed ${state.selected}. Cost paid: ${costLabel(state.selected)}`);
 }
 
 canvas.addEventListener('click', (e) => {
@@ -151,7 +246,7 @@ canvas.addEventListener('click', (e) => {
 
   const existing = getB(x, y);
   if (existing?.type === 'sorter') {
-    const value = prompt('Sorter filter item id (e.g. iron_ore, copper_ore, wire, plank):', existing.selectedItem);
+    const value = prompt('Sorter filter item id (e.g. iron, copper, wire, plank):', existing.selectedItem);
     if (value) existing.selectedItem = value.trim();
     return;
   }
@@ -188,8 +283,8 @@ function simulateTick() {
         if (state.trees.has(key(x, y))) addItem(b.storage, 'wood', b.level);
       } else if (factorySet.has(b.type)) {
         const recipe = recipes[b.type];
-        if (hasInputs(b.storage, recipe.in)) {
-          consumeInputs(b.storage, recipe.in);
+        if (hasResources(b.storage, recipe.in)) {
+          spendResources(b.storage, recipe.in);
           Object.entries(recipe.out).forEach(([item, qty]) => addItem(b.storage, item, qty));
         }
       }
@@ -230,12 +325,7 @@ function simulateTick() {
           const [dx, dy] = vec[d];
           if (pushTo(getB(x + dx, y + dy), item)) break;
         }
-      } else if (b.type === 'core') {
-        Object.entries(b.storage).forEach(([item, qty]) => {
-          if (qty > 0) addItem(state.coreInventory, item, qty);
-        });
-        b.storage = {};
-      } else if (b.storage) {
+      } else if (b.type !== 'core') {
         Object.entries(b.storage).forEach(([item, qty]) => {
           for (let i = 0; i < qty; i += 1) b.queue.push(item);
         });
@@ -254,9 +344,9 @@ function drawArrow(x, y, dir, color = '#fff') {
   ctx.rotate(rot);
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.moveTo(-10, -8);
-  ctx.lineTo(12, 0);
-  ctx.lineTo(-10, 8);
+  ctx.moveTo(-7, -5);
+  ctx.lineTo(8, 0);
+  ctx.lineTo(-7, 5);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
@@ -277,61 +367,61 @@ function render() {
       if (dep) {
         ctx.fillStyle = oreTypes[dep].color;
         ctx.beginPath();
-        ctx.arc(px + 12, py + 12, 5, 0, Math.PI * 2);
-        ctx.arc(px + 30, py + 22, 5, 0, Math.PI * 2);
-        ctx.arc(px + 20, py + 35, 4, 0, Math.PI * 2);
+        ctx.arc(px + 8, py + 8, 3, 0, Math.PI * 2);
+        ctx.arc(px + 20, py + 14, 3, 0, Math.PI * 2);
+        ctx.arc(px + 14, py + 24, 2.5, 0, Math.PI * 2);
         ctx.fill();
       } else if (state.trees.has(key(x, y))) {
         ctx.fillStyle = '#2f8f46';
         ctx.beginPath();
-        ctx.arc(px + 24, py + 20, 11, 0, Math.PI * 2);
+        ctx.arc(px + 16, py + 12, 7, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#7a4d2c';
-        ctx.fillRect(px + 22, py + 28, 4, 12);
+        ctx.fillRect(px + 15, py + 18, 2, 8);
       }
 
       const b = state.grid[y][x];
       if (!b) continue;
       if (b.type === 'core') {
         ctx.fillStyle = '#2d73ff';
-        ctx.fillRect(px + 4, py + 4, TILE - 8, TILE - 8);
+        ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
       } else if (b.type === 'miner') {
         ctx.fillStyle = '#888';
         ctx.beginPath();
-        ctx.moveTo(px + TILE / 2, py + 6);
-        ctx.lineTo(px + TILE - 8, py + TILE - 8);
-        ctx.lineTo(px + 8, py + TILE - 8);
+        ctx.moveTo(px + TILE / 2, py + 4);
+        ctx.lineTo(px + TILE - 4, py + TILE - 4);
+        ctx.lineTo(px + 4, py + TILE - 4);
         ctx.closePath();
         ctx.fill();
       } else if (b.type === 'conveyor') {
         ctx.fillStyle = '#6f6f6f';
-        ctx.fillRect(px + 6, py + 16, TILE - 12, TILE - 32);
+        ctx.fillRect(px + 4, py + 11, TILE - 8, TILE - 22);
         drawArrow(px, py, b.dir);
       } else if (b.type === 'router') {
         ctx.fillStyle = '#000';
-        ctx.fillRect(px + 8, py + 8, TILE - 16, TILE - 16);
+        ctx.fillRect(px + 6, py + 6, TILE - 12, TILE - 12);
       } else if (b.type === 'sorter') {
         ctx.fillStyle = '#000';
-        ctx.fillRect(px + 8, py + 8, TILE - 16, TILE - 16);
+        ctx.fillRect(px + 6, py + 6, TILE - 12, TILE - 12);
         ctx.fillStyle = '#fff';
-        ctx.fillRect(px + 16, py + 16, TILE - 32, TILE - 32);
+        ctx.fillRect(px + 11, py + 11, TILE - 22, TILE - 22);
       } else if (b.type === 'chopper') {
         ctx.fillStyle = '#8a8a8a';
         ctx.beginPath();
-        ctx.arc(px + TILE / 2, py + TILE / 2, 14, 0, Math.PI * 2);
+        ctx.arc(px + TILE / 2, py + TILE / 2, 9, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.moveTo(px + 24, py + 15);
-        ctx.lineTo(px + 35, py + 33);
-        ctx.lineTo(px + 14, py + 31);
+        ctx.moveTo(px + 16, py + 8);
+        ctx.lineTo(px + 22, py + 22);
+        ctx.lineTo(px + 10, py + 21);
         ctx.closePath();
         ctx.fill();
       } else {
         ctx.fillStyle = '#5a5a5a';
-        ctx.fillRect(px + 7, py + 7, TILE - 14, TILE - 14);
+        ctx.fillRect(px + 4, py + 4, TILE - 8, TILE - 8);
         ctx.fillStyle = '#111';
-        ctx.fillRect(px + 15, py + 15, TILE - 30, TILE - 30);
+        ctx.fillRect(px + 10, py + 10, TILE - 20, TILE - 20);
       }
     }
   }
@@ -344,12 +434,13 @@ function initUI() {
   const oreLegend = document.getElementById('ore-legend');
 
   buildings.forEach((b) => {
+    if (b.key === 'core') return;
     const btn = document.createElement('button');
-    btn.textContent = b.name;
+    btn.textContent = `${b.name} (${costLabel(b.key)})`;
     btn.addEventListener('click', () => {
       state.erase = false;
       state.selected = b.key;
-      [...wrap.children].forEach(x => x.classList.remove('active'));
+      [...wrap.children].forEach((x) => x.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('erase').classList.remove('active');
     });
@@ -371,8 +462,9 @@ function initUI() {
 
   setInterval(() => {
     const inv = document.getElementById('inventory');
+    const core = getCore();
     inv.innerHTML = '';
-    Object.entries(state.coreInventory)
+    Object.entries(core.storage)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .forEach(([item, qty]) => {
         const row = document.createElement('div');

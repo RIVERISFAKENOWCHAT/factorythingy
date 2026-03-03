@@ -18,9 +18,10 @@ header {
 }
 header h1 { margin: 0; font-size: 1.4rem; }
 header p { margin: 6px 0 0; color: #ccd5ea; }
+#message { min-height: 1.2em; color: #ffd36d; }
 main {
   display: grid;
-  grid-template-columns: 260px 1fr 280px;
+  grid-template-columns: 310px 1fr 300px;
   gap: 10px;
   padding: 10px;
 }
@@ -29,7 +30,7 @@ main {
   border: 1px solid #30384d;
   border-radius: 8px;
   padding: 10px;
-  max-height: calc(100vh - 90px);
+  max-height: calc(100vh - 120px);
   overflow: auto;
 }
 #building-buttons { display: grid; gap: 6px; }
@@ -42,20 +43,21 @@ main {
   color: var(--text);
   border-radius: 6px;
   cursor: pointer;
+  font-size: 0.8rem;
 }
 #building-buttons button.active, #erase.active {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
 .game-area {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  overflow: auto;
+  max-height: calc(100vh - 120px);
+  border: 1px solid #30384d;
+  border-radius: 8px;
 }
 canvas {
-  border: 1px solid #30384d;
+  display: block;
   background: #111;
-  border-radius: 8px;
 }
 #inventory {
   display: grid;
@@ -64,4 +66,10 @@ canvas {
   font-size: 0.85rem;
 }
 ul { padding-left: 20px; }
-kbd { background: #2b3245; border: 1px solid #4f5b7a; border-bottom-width: 2px; padding: 1px 5px; border-radius: 5px; }
+kbd {
+  background: #2b3245;
+  border: 1px solid #4f5b7a;
+  border-bottom-width: 2px;
+  padding: 1px 5px;
+  border-radius: 5px;
+}

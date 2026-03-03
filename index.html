@@ -9,23 +9,24 @@
 <body>
   <header>
     <h1>Factory Thingy — Part 1</h1>
-    <p>Left click to place selected building. Press <kbd>R</kbd> to rotate. Click a sorter to choose its item filter.</p>
+    <p>Core starts pre-placed and cannot be deleted. Left click to place selected building. Press <kbd>R</kbd> to rotate.</p>
+    <p id="message"></p>
   </header>
 
   <main>
     <section class="panel" id="build-panel">
       <h2>Build</h2>
       <div id="building-buttons"></div>
-      <p id="rotation">Direction: Right →</p>
+      <p id="rotation">Direction: right</p>
       <button id="erase">Eraser</button>
     </section>
 
     <section class="game-area">
-      <canvas id="game" width="960" height="672"></canvas>
+      <canvas id="game"></canvas>
     </section>
 
     <section class="panel" id="inventory-panel">
-      <h2>Core Inventory</h2>
+      <h2>Core Storage</h2>
       <div id="inventory"></div>
       <h3>Legend</h3>
       <ul id="ore-legend"></ul>
