@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Factory Thingy - Part 1</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Factory Thingy — Part 1</h1>
+    <p>Core starts pre-placed and cannot be deleted. Left click to place selected building. Press <kbd>R</kbd> to rotate.</p>
+    <p id="message"></p>
+  </header>
+
+  <main>
+    <section class="panel" id="build-panel">
+      <h2>Build</h2>
+      <div id="building-buttons"></div>
+      <p id="rotation">Direction: right</p>
+      <button id="erase">Eraser</button>
+    </section>
+
+    <section class="game-area">
+      <canvas id="game"></canvas>
+    </section>
+
+    <section class="panel" id="inventory-panel">
+      <h2>Core Storage</h2>
+      <div id="inventory"></div>
+      <h3>Legend</h3>
+      <ul id="ore-legend"></ul>
+    </section>
+  </main>
+
+  <script src="game.js"></script>
+</body>
+</html>
