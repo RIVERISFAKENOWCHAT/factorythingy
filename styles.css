@@ -1,0 +1,67 @@
+:root {
+  --bg: #131620;
+  --panel: #1d2230;
+  --text: #f4f7ff;
+  --accent: #7fb8ff;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+}
+header {
+  padding: 12px 20px;
+  border-bottom: 1px solid #323a4f;
+}
+header h1 { margin: 0; font-size: 1.4rem; }
+header p { margin: 6px 0 0; color: #ccd5ea; }
+main {
+  display: grid;
+  grid-template-columns: 260px 1fr 280px;
+  gap: 10px;
+  padding: 10px;
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid #30384d;
+  border-radius: 8px;
+  padding: 10px;
+  max-height: calc(100vh - 90px);
+  overflow: auto;
+}
+#building-buttons { display: grid; gap: 6px; }
+#building-buttons button, #erase {
+  text-align: left;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #45506c;
+  background: #252d3f;
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+}
+#building-buttons button.active, #erase.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.game-area {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+canvas {
+  border: 1px solid #30384d;
+  background: #111;
+  border-radius: 8px;
+}
+#inventory {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 8px;
+  font-size: 0.85rem;
+}
+ul { padding-left: 20px; }
+kbd { background: #2b3245; border: 1px solid #4f5b7a; border-bottom-width: 2px; padding: 1px 5px; border-radius: 5px; }
