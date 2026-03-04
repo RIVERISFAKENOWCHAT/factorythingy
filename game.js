@@ -147,21 +147,38 @@ function generateMap() {
 }
 generateMap();
 
-function canDirectExportFromStorage(b) {
-  return b && (b.type === 'miner' || b.type === 'chopper');
+function getStorageExportItem(b) {
+  if (!b) return null;
+
+  // Raw producers can export anything they mined/chopped.
+  if (b.type === 'miner' || b.type === 'chopper') {
+    for (const [item, qty] of Object.entries(b.storage || {})) {
+      if (qty > 0) return item;
+    }
+    return null;
+  }
+
+  // Factories export only recipe outputs (never input ingredients),
+  // which allows conveyors facing away from the building to carry outputs
+  // without draining required inputs.
+  const r = recipes[b.type];
+  if (r?.out) {
+    for (const item of Object.keys(r.out)) {
+      if ((b.storage[item] || 0) > 0) return item;
+    }
+  }
+
+  return null;
 }
 
 function pullFromOutput(x, y) {
   const b = getB(x, y); if (!b) return null;
   if (b.queue.length) return b.queue.shift();
 
-  // Prevent factories from leaking their input buffers.
-  if (!canDirectExportFromStorage(b)) return null;
-
-  for (const [item, qty] of Object.entries(b.storage || {})) {
-    if (qty > 0) { b.storage[item] -= 1; return item; }
-  }
-  return null;
+  const item = getStorageExportItem(b);
+  if (!item) return null;
+  b.storage[item] -= 1;
+  return item;
 }
 function pushTo(b, item) { if (!b) return false; if (b.type === 'core') { addItem(state.coreStorage, item, 1); return true; } b.queue.push(item); return true; }
 function outputsTo(source, sx, sy, tx, ty) {
