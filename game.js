@@ -147,18 +147,24 @@ function generateMap() {
 }
 generateMap();
 
-function pullFromOutput(x, y) {
-  const b = getB(x, y);
+function getStorageExportItem(b) {
   if (!b) return null;
-  if (b.queue.length) return b.queue.shift();
 
-  // Allow direct pull from freshly-produced storage so conveyors work
-  // regardless of per-tile iteration order within a tick.
-  const storageEntries = Object.entries(b.storage || {});
-  for (const [item, qty] of storageEntries) {
-    if (qty > 0) {
-      b.storage[item] -= 1;
-      return item;
+  // Raw producers can export anything they mined/chopped.
+  if (b.type === 'miner' || b.type === 'chopper') {
+    for (const [item, qty] of Object.entries(b.storage || {})) {
+      if (qty > 0) return item;
+    }
+    return null;
+  }
+
+  // Factories export only recipe outputs (never input ingredients),
+  // which allows conveyors facing away from the building to carry outputs
+  // without draining required inputs.
+  const r = recipes[b.type];
+  if (r?.out) {
+    for (const item of Object.keys(r.out)) {
+      if ((b.storage[item] || 0) > 0) return item;
     }
   }
 
@@ -169,13 +175,10 @@ function pullFromOutput(x, y) {
   const b = getB(x, y); if (!b) return null;
   if (b.queue.length) return b.queue.shift();
 
-  // Prevent factories from leaking their input buffers.
-  if (!canDirectExportFromStorage(b)) return null;
-
-  for (const [item, qty] of Object.entries(b.storage || {})) {
-    if (qty > 0) { b.storage[item] -= 1; return item; }
-  }
-  return null;
+  const item = getStorageExportItem(b);
+  if (!item) return null;
+  b.storage[item] -= 1;
+  return item;
 }
 function pushTo(b, item) { if (!b) return false; if (b.type === 'core') { addItem(state.coreStorage, item, 1); return true; } b.queue.push(item); return true; }
 function outputsTo(source, sx, sy, tx, ty) {
@@ -213,7 +216,8 @@ function place(x, y) {
   const c = { storage: coreStorage() }; const cost = buildingCosts[state.selected];
   if (!hasResources(c.storage, cost)) return setMessage(`Not enough resources: ${costLabel(state.selected)}`);
   spendResources(c.storage, cost);
-  state.grid[y][x] = makeBuilding(state.selected, state.rotation);
+  const dir = state.selected === 'conveyor' ? state.rotation : 'right';
+  state.grid[y][x] = makeBuilding(state.selected, dir);
 }
 
 function openInspector(x, y) {
@@ -277,10 +281,15 @@ canvas.addEventListener('contextmenu', (e) => {
   openInspector(x, y);
 });
 window.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'r') {
-    state.rotation = dirs[(dirs.indexOf(state.rotation) + 1) % 4];
-    document.getElementById('rotation').textContent = `Direction: ${state.rotation}`;
+  if (e.key.toLowerCase() !== 'r') return;
+
+  if (state.selected !== 'conveyor') {
+    setMessage('Only conveyors can be rotated.');
+    return;
   }
+
+  state.rotation = dirs[(dirs.indexOf(state.rotation) + 1) % 4];
+  document.getElementById('rotation').textContent = `Conveyor Direction: ${state.rotation}`;
 });
 
 let dragging = false; let last = null;
@@ -411,12 +420,23 @@ function simulate(dt = 0.2) {
     const b = getB(x, y); if (!b) continue;
     if (b.type === 'conveyor') {
       const [fx, fy] = vec[b.dir];
-      let item = null;
-      for (const [sx, sy] of getConveyorInputCandidates(x, y, b.dir)) {
-        const src = getB(sx, sy); if (!outputsTo(src, sx, sy, x, y)) continue;
-        item = pullFromOutput(sx, sy); if (item) break;
+
+      // First, advance any item this conveyor already holds.
+      let item = pullFromOutput(x, y);
+
+      // If empty, pull from valid upstream neighbors.
+      if (!item) {
+        for (const [sx, sy] of getConveyorInputCandidates(x, y, b.dir)) {
+          if (sx === x && sy === y) continue;
+          const src = getB(sx, sy); if (!outputsTo(src, sx, sy, x, y)) continue;
+          item = pullFromOutput(sx, sy); if (item) break;
+        }
       }
-      if (item) { const t = getB(x + fx, y + fy); if (!pushTo(t, item)) addItem(b.storage, item); }
+
+      if (item) {
+        const t = getB(x + fx, y + fy);
+        if (!pushTo(t, item)) b.queue.push(item);
+      }
     } else if (b.type === 'router') {
       const [bx, by] = vec[opposite(b.dir)]; const item = pullFromOutput(x + bx, y + by); if (!item) continue;
       const outs = [b.dir, turnLeft(b.dir), turnRight(b.dir)];
@@ -566,7 +586,16 @@ function initUI() {
   for (const name of buildings) {
     const b = document.createElement('button');
     b.textContent = `${name} (${costLabel(name)})`;
-    b.onclick = () => { state.selected = name; state.erase = false; [...wrap.children].forEach((n) => n.classList.remove('active')); b.classList.add('active'); document.getElementById('erase').classList.remove('active'); };
+    b.onclick = () => {
+      state.selected = name;
+      state.erase = false;
+      [...wrap.children].forEach((n) => n.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('erase').classList.remove('active');
+      document.getElementById('rotation').textContent = state.selected === 'conveyor'
+        ? `Conveyor Direction: ${state.rotation}`
+        : 'Conveyor Direction: (select conveyor + press R)';
+    };
     if (name === state.selected) b.classList.add('active');
     wrap.appendChild(b);
   }
