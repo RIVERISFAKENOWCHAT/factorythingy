@@ -132,6 +132,7 @@ state.coreStorage = { wood: 50, copper: 50, iron: 50, coal: 50 };
 
 function getB(x, y) { return inside(x, y) ? state.grid[y][x] : null; }
 const coreStorage = () => state.coreStorage;
+const transportTypes = new Set(['conveyor', 'router', 'sorter']);
 function addItem(store, item, qty = 1) { store[item] = (store[item] || 0) + qty; }
 function hasResources(store, needs) { return Object.entries(needs || {}).every(([k, v]) => (store[k] || 0) >= v); }
 function spendResources(store, needs) { Object.entries(needs || {}).forEach(([k, v]) => { store[k] -= v; }); }
@@ -364,6 +365,11 @@ function simulate(dt = 0.2) {
 
   for (let y = 0; y < H; y += 1) for (let x = 0; x < W; x += 1) {
     const b = getB(x, y); if (!b) continue;
+
+    // Transport belts/splitters keep items in queue so downstream transport
+    // can pull them; everything else buffers queue into storage.
+    if (transportTypes.has(b.type)) continue;
+
     while (b.queue.length) addItem(b.storage, b.queue.shift(), 1);
   }
 
