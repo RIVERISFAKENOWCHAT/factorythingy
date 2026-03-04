@@ -147,8 +147,22 @@ function generateMap() {
 }
 generateMap();
 
-function canDirectExportFromStorage(b) {
-  return b && (b.type === 'miner' || b.type === 'chopper');
+function pullFromOutput(x, y) {
+  const b = getB(x, y);
+  if (!b) return null;
+  if (b.queue.length) return b.queue.shift();
+
+  // Allow direct pull from freshly-produced storage so conveyors work
+  // regardless of per-tile iteration order within a tick.
+  const storageEntries = Object.entries(b.storage || {});
+  for (const [item, qty] of storageEntries) {
+    if (qty > 0) {
+      b.storage[item] -= 1;
+      return item;
+    }
+  }
+
+  return null;
 }
 
 function pullFromOutput(x, y) {
