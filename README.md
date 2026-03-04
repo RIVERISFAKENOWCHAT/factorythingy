@@ -19,7 +19,7 @@ Open `http://localhost:8000`.
 ## Controls
 
 - Left click: place selected building
-- `R`: rotate direction
+- `R`: rotate **conveyors only**
 - Eraser toggle: delete (core cannot be deleted)
 - Right click: open side inspector for building info
 - Mouse wheel: zoom in/out

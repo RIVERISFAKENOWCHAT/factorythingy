@@ -199,7 +199,8 @@ function place(x, y) {
   const c = { storage: coreStorage() }; const cost = buildingCosts[state.selected];
   if (!hasResources(c.storage, cost)) return setMessage(`Not enough resources: ${costLabel(state.selected)}`);
   spendResources(c.storage, cost);
-  state.grid[y][x] = makeBuilding(state.selected, state.rotation);
+  const dir = state.selected === 'conveyor' ? state.rotation : 'right';
+  state.grid[y][x] = makeBuilding(state.selected, dir);
 }
 
 function openInspector(x, y) {
@@ -263,10 +264,15 @@ canvas.addEventListener('contextmenu', (e) => {
   openInspector(x, y);
 });
 window.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'r') {
-    state.rotation = dirs[(dirs.indexOf(state.rotation) + 1) % 4];
-    document.getElementById('rotation').textContent = `Direction: ${state.rotation}`;
+  if (e.key.toLowerCase() !== 'r') return;
+
+  if (state.selected !== 'conveyor') {
+    setMessage('Only conveyors can be rotated.');
+    return;
   }
+
+  state.rotation = dirs[(dirs.indexOf(state.rotation) + 1) % 4];
+  document.getElementById('rotation').textContent = `Conveyor Direction: ${state.rotation}`;
 });
 
 let dragging = false; let last = null;
@@ -563,7 +569,16 @@ function initUI() {
   for (const name of buildings) {
     const b = document.createElement('button');
     b.textContent = `${name} (${costLabel(name)})`;
-    b.onclick = () => { state.selected = name; state.erase = false; [...wrap.children].forEach((n) => n.classList.remove('active')); b.classList.add('active'); document.getElementById('erase').classList.remove('active'); };
+    b.onclick = () => {
+      state.selected = name;
+      state.erase = false;
+      [...wrap.children].forEach((n) => n.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('erase').classList.remove('active');
+      document.getElementById('rotation').textContent = state.selected === 'conveyor'
+        ? `Conveyor Direction: ${state.rotation}`
+        : 'Conveyor Direction: (select conveyor + press R)';
+    };
     if (name === state.selected) b.classList.add('active');
     wrap.appendChild(b);
   }
