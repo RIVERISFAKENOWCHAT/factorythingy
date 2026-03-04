@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Factory Thingy - Part 1</title>
+  <title>Factory Thingy - Part 1+</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header>
-    <h1>Factory Thingy — Part 1</h1>
-    <p>Core starts pre-placed and cannot be deleted. Left click to place selected building. Press <kbd>R</kbd> to rotate.</p>
+    <h1>Factory Thingy</h1>
+    <p>Left click place. R rotate. Wheel zoom. Middle-drag pan. Right click opens building inspector.</p>
     <p id="message"></p>
+    <p id="world-stats"></p>
   </header>
 
   <main>
@@ -22,16 +23,21 @@
     </section>
 
     <section class="game-area">
-      <canvas id="game"></canvas>
+      <canvas id="game" width="1200" height="760"></canvas>
     </section>
 
     <section class="panel" id="inventory-panel">
       <h2>Core Storage</h2>
       <div id="inventory"></div>
-      <h3>Legend</h3>
+      <h3>Ore Legend</h3>
       <ul id="ore-legend"></ul>
     </section>
   </main>
+
+  <aside id="inspector" class="hidden">
+    <h3 id="inspector-title">Inspector</h3>
+    <pre id="inspector-body"></pre>
+  </aside>
 
   <script src="game.js"></script>
 </body>
