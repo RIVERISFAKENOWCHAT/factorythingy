@@ -136,9 +136,17 @@ function generateMap() {
 }
 generateMap();
 
+function canDirectExportFromStorage(b) {
+  return b && (b.type === 'miner' || b.type === 'chopper');
+}
+
 function pullFromOutput(x, y) {
   const b = getB(x, y); if (!b) return null;
   if (b.queue.length) return b.queue.shift();
+
+  // Prevent factories from leaking their input buffers.
+  if (!canDirectExportFromStorage(b)) return null;
+
   for (const [item, qty] of Object.entries(b.storage || {})) {
     if (qty > 0) { b.storage[item] -= 1; return item; }
   }
@@ -350,15 +358,15 @@ function simulate(dt = 0.2) {
     prodAcc = 0;
     for (let y = 0; y < H; y += 1) for (let x = 0; x < W; x += 1) {
       const b = getB(x, y); if (!b) continue;
-      if (b.type === 'miner') { const dep = state.deposits.get(key(x, y)); if (dep) addItem(b.storage, dep, 1); }
-      else if (b.type === 'chopper') { if (state.trees.has(key(x, y))) addItem(b.storage, 'wood', 1); }
+      if (b.type === 'miner') { const dep = state.deposits.get(key(x, y)); if (dep) b.queue.push(dep); }
+      else if (b.type === 'chopper') { if (state.trees.has(key(x, y))) b.queue.push('wood'); }
       else if (recipes[b.type]) {
         const r = recipes[b.type];
         const liquidReqOk = !r.liquidOnly || state.liquids.get(key(x, y)) === r.liquidOnly;
         const powerOk = !r.power || b.powerLevel >= r.power;
         if (liquidReqOk && powerOk && hasResources(b.storage, r.in)) {
           spendResources(b.storage, r.in);
-          Object.entries(r.out).forEach(([i, q]) => addItem(b.storage, i, q));
+          Object.entries(r.out).forEach(([i, q]) => { for (let n = 0; n < q; n += 1) b.queue.push(i); });
         }
       }
     }
@@ -382,9 +390,6 @@ function simulate(dt = 0.2) {
       const [bx, by] = vec[opposite(b.dir)]; const item = pullFromOutput(x + bx, y + by); if (!item) continue;
       const pref = item === b.selectedItem ? [b.dir] : [turnLeft(b.dir), turnRight(b.dir)];
       for (const d of pref) { const [dx, dy] = vec[d]; if (pushTo(getB(x + dx, y + dy), item)) break; }
-    } else if (b.type !== 'core') {
-      Object.entries(b.storage).forEach(([i, q]) => { if (q > 0 && !turrets[b.type]) for (let n = 0; n < q; n += 1) b.queue.push(i); });
-      if (!turrets[b.type]) b.storage = {};
     }
   }
 
