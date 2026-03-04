@@ -6,15 +6,6 @@ Current prototype now includes:
 - Right-click **building inspector side menu**
 - Core/factory/logistics systems from previous part
 - Expanded systems/data for ammo types, liquid production, turrets, power buildings, enemies, waves, and quota rounds
-# Factory Thingy (Part 1)
-
-Updated Part 1 implementation includes:
-
-- Pre-placed permanent Core (cannot be deleted)
-- Much larger map (48x30) with lower resource density
-- Starting Core storage: `50 wood`, `50 copper`, `50 iron`
-- Building placement costs for all basic + factory buildings from your spec
-- Working mechanics for miner/chopper extraction, conveyor/router/sorter logistics, and factory recipes
 
 ## Run
 

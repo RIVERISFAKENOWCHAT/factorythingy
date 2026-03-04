@@ -24,3 +24,5 @@ ul { padding-left: 18px; }
 #inspector.hidden { display: none; }
 #inspector h3 { margin: 0 0 6px; }
 #inspector pre { margin: 0; white-space: pre-wrap; font-size: 0.8rem; color: #d8e4ff; }
+
+#find-core { margin-top: 6px; padding: 5px 8px; border: 1px solid #4f5b7a; background: #263049; color: #ddecff; border-radius: 6px; cursor: pointer; }

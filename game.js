@@ -86,8 +86,8 @@ const buildings = [
 ];
 
 const buildingCosts = {
-  miner: { iron: 10, copper: 5 }, conveyor: { iron: 1 }, router: { iron: 2, copper: 1 }, sorter: { iron_plate: 2, wire: 2 }, chopper: { iron: 8, plank: 4 },
-  plank_builder: { iron: 10, plank: 5 }, graphite_compressor: { iron: 8, iron_plate: 2 }, wire_creator: { iron: 6, copper: 4 }, cog_maker: { iron: 8, copper: 4, plank: 2 },
+  miner: { iron: 10, copper: 5 }, conveyor: { iron: 1 }, router: { iron: 2, copper: 1 }, sorter: { iron_plate: 2, wire: 2 }, chopper: { iron: 8, wood: 4 },
+  plank_builder: { iron: 4, wood: 4 }, graphite_compressor: { iron: 8, iron_plate: 2 }, wire_creator: { iron: 6, copper: 4 }, cog_maker: { iron: 8, copper: 4, plank: 2 },
   plate_press: { iron: 12, cog: 2 }, rod_extruder: { iron: 8, cog: 1 }, pipe_assembler: { iron_plate: 6, rod: 2 }, frame_constructor: { iron_plate: 10, rod: 4, cog: 2 },
   circuit_printer: { wire: 6, graphite: 2, iron_plate: 2 }, reinforced_plank_builder: { iron_plate: 4, plank: 4 }, industrial_cog_press: { steel: 6, cog: 4, frame: 1 },
   battery_maker: { graphite: 4, copper: 4, iron_plate: 2 }, motor_assembler: { cog: 4, wire: 4, frame: 1 }, fuel_processor: { steel: 4, graphite: 2 },
@@ -107,7 +107,7 @@ const state = {
   deposits: new Map(), trees: new Set(), liquids: new Map(),
   viewport: { zoom: 1, offX: W / 2 - 20, offY: H / 2 - 15 },
   power: { generation: 0, demand: 0, balance: 0, stored: 0, capacity: 0 },
-  enemies: [], wave: 0, waveTimer: 120, quotaRound: 1,
+  enemies: [], wave: 0, waveTimer: 600, quotaRound: 1,
   quota: { copper: 1000, iron: 300, cog: 200 },
   inspector: null,
 };
@@ -264,6 +264,12 @@ canvas.addEventListener('wheel', (e) => {
 document.getElementById('erase').addEventListener('click', (e) => {
   state.erase = !state.erase; e.currentTarget.classList.toggle('active', state.erase);
 });
+document.getElementById('find-core').addEventListener('click', () => {
+  state.viewport.offX = corePos.x - (canvas.width / (BASE_TILE * state.viewport.zoom)) / 2;
+  state.viewport.offY = corePos.y - (canvas.height / (BASE_TILE * state.viewport.zoom)) / 2;
+  setMessage('Centered camera on Core.');
+});
+
 
 function nearestEnemy(x, y, range) {
   let best = null; let dBest = Infinity;
@@ -460,7 +466,7 @@ function simulate(dt = 0.2) {
   }
 
   if (state.inspector) openInspector(state.inspector.x, state.inspector.y);
-  document.getElementById('world-stats').textContent = `Map: 150x150 | Zoom: ${state.viewport.zoom.toFixed(2)}x | Wave ${state.wave} in ${Math.ceil(state.waveTimer)}s | Enemies: ${state.enemies.length} | Power ${state.power.generation.toFixed(0)}W gen / ${state.power.demand.toFixed(0)}W use / Stored ${state.power.stored.toFixed(0)}`;
+  document.getElementById('world-stats').textContent = `Map: 150x150 | Zoom: ${state.viewport.zoom.toFixed(2)}x | Wave ${state.wave} in ${Math.ceil(state.waveTimer)}s (first wave at 600s) | Enemies: ${state.enemies.length} | Power ${state.power.generation.toFixed(0)}W gen / ${state.power.demand.toFixed(0)}W use / Stored ${state.power.stored.toFixed(0)}`;
 }
 
 function draw() {
@@ -492,6 +498,15 @@ function draw() {
       ctx.fillStyle = '#fff';
       ctx.font = `${Math.max(8, t * 0.5)}px sans-serif`;
       ctx.fillText({ up: '↑', down: '↓', left: '←', right: '→' }[b.dir], px + t * 0.3, py + t * 0.7);
+    }
+    if (b.type === 'core') {
+      const pulse = (Math.sin(Date.now() / 350) + 1) * 0.5;
+      const r = t * (0.52 + pulse * 0.18);
+      ctx.strokeStyle = '#8cd3ff';
+      ctx.lineWidth = Math.max(1, t * 0.06);
+      ctx.beginPath();
+      ctx.arc(px + t * 0.5, py + t * 0.5, r, 0, Math.PI * 2);
+      ctx.stroke();
     }
   }
 
