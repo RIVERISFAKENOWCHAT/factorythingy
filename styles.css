@@ -1,0 +1,26 @@
+:root {
+  --bg: #131620;
+  --panel: #1d2230;
+  --text: #f4f7ff;
+  --accent: #7fb8ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; }
+header { padding: 10px 16px; border-bottom: 1px solid #323a4f; }
+header h1 { margin: 0; font-size: 1.3rem; }
+header p { margin: 4px 0 0; color: #ccd5ea; }
+#message { min-height: 1.1em; color: #ffd36d; }
+#world-stats { color: #9fd6ff; }
+main { display: grid; grid-template-columns: 330px 1fr 300px; gap: 10px; padding: 10px; }
+.panel { background: var(--panel); border: 1px solid #30384d; border-radius: 8px; padding: 10px; max-height: calc(100vh - 130px); overflow: auto; }
+#building-buttons { display: grid; gap: 6px; }
+#building-buttons button, #erase { text-align: left; width: 100%; padding: 6px 8px; border: 1px solid #45506c; background: #252d3f; color: var(--text); border-radius: 6px; cursor: pointer; font-size: 0.78rem; }
+#building-buttons button.active, #erase.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.game-area { border: 1px solid #30384d; border-radius: 8px; overflow: hidden; }
+canvas { display: block; background: #0f1218; }
+#inventory { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px 8px; font-size: 0.82rem; }
+ul { padding-left: 18px; }
+#inspector { position: fixed; right: 10px; bottom: 10px; width: 330px; max-height: 55vh; overflow: auto; background: #151a24; border: 1px solid #3d4862; border-radius: 8px; padding: 10px; }
+#inspector.hidden { display: none; }
+#inspector h3 { margin: 0 0 6px; }
+#inspector pre { margin: 0; white-space: pre-wrap; font-size: 0.8rem; color: #d8e4ff; }
