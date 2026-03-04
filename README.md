@@ -4,6 +4,7 @@ Current prototype now includes:
 
 - **150x150 map** with zoom + pan controls
 - Right-click **building inspector side menu**
+- 3x3 Core hub with shared storage across all core tiles
 - Core/factory/logistics systems from previous part
 - Expanded systems/data for ammo types, liquid production, turrets, power buildings, enemies, waves, and quota rounds
 

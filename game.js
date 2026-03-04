@@ -117,19 +117,29 @@ function makeBuilding(type, dir) {
 }
 
 const corePos = { x: Math.floor(W / 2), y: Math.floor(H / 2) };
-state.grid[corePos.y][corePos.x] = makeBuilding('core', 'right');
-Object.assign(state.grid[corePos.y][corePos.x].storage, { wood: 50, copper: 50, iron: 50, coal: 50 });
+const CORE_RADIUS = 1; // 3x3 core area
+
+function isCoreTile(x, y) {
+  return Math.abs(x - corePos.x) <= CORE_RADIUS && Math.abs(y - corePos.y) <= CORE_RADIUS;
+}
+
+for (let y = corePos.y - CORE_RADIUS; y <= corePos.y + CORE_RADIUS; y += 1) {
+  for (let x = corePos.x - CORE_RADIUS; x <= corePos.x + CORE_RADIUS; x += 1) {
+    state.grid[y][x] = makeBuilding('core', 'right');
+  }
+}
+state.coreStorage = { wood: 50, copper: 50, iron: 50, coal: 50 };
 
 function getB(x, y) { return inside(x, y) ? state.grid[y][x] : null; }
-const core = () => state.grid[corePos.y][corePos.x];
+const coreStorage = () => state.coreStorage;
 function addItem(store, item, qty = 1) { store[item] = (store[item] || 0) + qty; }
 function hasResources(store, needs) { return Object.entries(needs || {}).every(([k, v]) => (store[k] || 0) >= v); }
 function spendResources(store, needs) { Object.entries(needs || {}).forEach(([k, v]) => { store[k] -= v; }); }
 
 function generateMap() {
-  const addDep = (type, count) => { let p = 0; while (p < count) { const x = Math.floor(Math.random() * W); const y = Math.floor(Math.random() * H); const k = key(x, y); if ((x === corePos.x && y === corePos.y) || state.deposits.has(k)) continue; state.deposits.set(k, type); p += 1; } };
+  const addDep = (type, count) => { let p = 0; while (p < count) { const x = Math.floor(Math.random() * W); const y = Math.floor(Math.random() * H); const k = key(x, y); if (isCoreTile(x, y) || state.deposits.has(k)) continue; state.deposits.set(k, type); p += 1; } };
   addDep('copper', 500); addDep('coal', 450); addDep('iron', 550); addDep('titanium', 300); addDep('thirite', 180); addDep('orium', 80);
-  let t = 0; while (t < 900) { const x = Math.floor(Math.random() * W); const y = Math.floor(Math.random() * H); const k = key(x, y); if ((x === corePos.x && y === corePos.y) || state.deposits.has(k) || state.trees.has(k)) continue; state.trees.add(k); t += 1; }
+  let t = 0; while (t < 900) { const x = Math.floor(Math.random() * W); const y = Math.floor(Math.random() * H); const k = key(x, y); if (isCoreTile(x, y) || state.deposits.has(k) || state.trees.has(k)) continue; state.trees.add(k); t += 1; }
   let water = 0; while (water < 400) { const x = Math.floor(Math.random() * W); const y = Math.floor(Math.random() * H); const k = key(x, y); if (state.liquids.has(k)) continue; state.liquids.set(k, 'water_tile'); water += 1; }
   let oil = 0; while (oil < 220) { const x = Math.floor(Math.random() * W); const y = Math.floor(Math.random() * H); const k = key(x, y); if (state.liquids.has(k)) continue; state.liquids.set(k, 'oil_tile'); oil += 1; }
   let lava = 0; while (lava < 120) { const x = Math.floor(Math.random() * W); const y = Math.floor(Math.random() * H); const k = key(x, y); if (state.liquids.has(k)) continue; state.liquids.set(k, 'lava_tile'); lava += 1; }
@@ -152,7 +162,7 @@ function pullFromOutput(x, y) {
   }
   return null;
 }
-function pushTo(b, item) { if (!b) return false; if (b.type === 'core') { addItem(b.storage, item, 1); return true; } b.queue.push(item); return true; }
+function pushTo(b, item) { if (!b) return false; if (b.type === 'core') { addItem(state.coreStorage, item, 1); return true; } b.queue.push(item); return true; }
 function outputsTo(source, sx, sy, tx, ty) {
   if (!source || source.type === 'core') return false;
   if (source.type === 'conveyor') { const [dx, dy] = vec[source.dir]; return sx + dx === tx && sy + dy === ty; }
@@ -173,6 +183,7 @@ function costLabel(type) { const c = buildingCosts[type]; return c ? Object.entr
 
 function canPlaceOnTile(type, x, y) {
   const liq = state.liquids.get(key(x, y));
+  if (isCoreTile(x, y)) return false;
   if (type === 'water_pump') return liq === 'water_tile';
   if (type === 'oil_extractor') return liq === 'oil_tile';
   if (type === 'lava_pump') return liq === 'lava_tile';
@@ -181,10 +192,10 @@ function canPlaceOnTile(type, x, y) {
 
 function place(x, y) {
   if (!inside(x, y)) return;
-  if (x === corePos.x && y === corePos.y) return setMessage('Core is permanent and cannot be edited.');
+  if (isCoreTile(x, y)) return setMessage('Core is permanent and cannot be edited.');
   if (state.erase) { state.grid[y][x] = null; return; }
   if (!canPlaceOnTile(state.selected, x, y)) return setMessage('This building must be placed on its required liquid tile.');
-  const c = core(); const cost = buildingCosts[state.selected];
+  const c = { storage: coreStorage() }; const cost = buildingCosts[state.selected];
   if (!hasResources(c.storage, cost)) return setMessage(`Not enough resources: ${costLabel(state.selected)}`);
   spendResources(c.storage, cost);
   state.grid[y][x] = makeBuilding(state.selected, state.rotation);
@@ -218,7 +229,11 @@ function openInspector(x, y) {
     const p = powerBuildings[b.type];
     text += `Power output: ${p.gen || 0}W/sec\nBattery cap: ${p.capacity || 0}\n`;
   }
-  text += `Stored items: ${Object.entries(b.storage).map(([k,v])=>`${k}:${v}`).join(', ') || 'none'}\n`;
+  if (b.type === 'core') {
+    text += `Stored items: ${Object.entries(state.coreStorage).map(([k,v])=>`${k}:${Math.floor(v)}`).join(', ') || 'none'}\n`;
+  } else {
+    text += `Stored items: ${Object.entries(b.storage).map(([k,v])=>`${k}:${v}`).join(', ') || 'none'}\n`;
+  }
   document.getElementById('inspector-body').textContent = text;
 }
 
@@ -504,11 +519,11 @@ function draw() {
       ctx.font = `${Math.max(8, t * 0.5)}px sans-serif`;
       ctx.fillText({ up: '↑', down: '↓', left: '←', right: '→' }[b.dir], px + t * 0.3, py + t * 0.7);
     }
-    if (b.type === 'core') {
+    if (b.type === 'core' && x === corePos.x && y === corePos.y) {
       const pulse = (Math.sin(Date.now() / 350) + 1) * 0.5;
-      const r = t * (0.52 + pulse * 0.18);
+      const r = t * (1.6 + pulse * 0.3);
       ctx.strokeStyle = '#8cd3ff';
-      ctx.lineWidth = Math.max(1, t * 0.06);
+      ctx.lineWidth = Math.max(1, t * 0.08);
       ctx.beginPath();
       ctx.arc(px + t * 0.5, py + t * 0.5, r, 0, Math.PI * 2);
       ctx.stroke();
@@ -539,7 +554,7 @@ function initUI() {
   for (const o of Object.values(oreTypes)) { const li = document.createElement('li'); li.textContent = o.label; li.style.color = o.color; legend.appendChild(li); }
   setInterval(() => {
     const inv = document.getElementById('inventory'); inv.innerHTML = '';
-    Object.entries(core().storage).sort((a, b) => a[0].localeCompare(b[0])).forEach(([k, v]) => { const row = document.createElement('div'); row.textContent = `${k}: ${Math.floor(v)}`; inv.appendChild(row); });
+    Object.entries(coreStorage()).sort((a, b) => a[0].localeCompare(b[0])).forEach(([k, v]) => { const row = document.createElement('div'); row.textContent = `${k}: ${Math.floor(v)}`; inv.appendChild(row); });
   }, 250);
 }
 
