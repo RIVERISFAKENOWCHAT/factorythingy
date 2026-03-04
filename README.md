@@ -1,12 +1,12 @@
-# Factory Thingy (Part 1)
+# Factory Thingy
 
-Updated Part 1 implementation includes:
+Current prototype now includes:
 
-- Pre-placed permanent Core (cannot be deleted)
-- Much larger map (48x30) with lower resource density
-- Starting Core storage: `50 wood`, `50 copper`, `50 iron`
-- Building placement costs for all basic + factory buildings from your spec
-- Working mechanics for miner/chopper extraction, conveyor/router/sorter logistics, and factory recipes
+- **150x150 map** with zoom + pan controls
+- Right-click **building inspector side menu**
+- 3x3 Core hub with shared storage across all core tiles
+- Core/factory/logistics systems from previous part
+- Expanded systems/data for ammo types, liquid production, turrets, power buildings, enemies, waves, and quota rounds
 
 ## Run
 
@@ -14,17 +14,13 @@ Updated Part 1 implementation includes:
 python3 -m http.server 8000
 ```
 
-Then open `http://localhost:8000`.
+Open `http://localhost:8000`.
 
 ## Controls
 
-- Select building from the left panel and click map to place
-- Press `R` to rotate
-- Click **Eraser** to remove buildings (except Core)
-- Click Sorter to set filter item id
-
-## Notes
-
-- Core storage now updates live and is used for placement costs.
-- Buildings are only placed if Core has enough items for the listed cost.
-- Upgrade costs and power/coolant requirements are represented in data planning but not yet enforced as machine-runtime constraints in this part.
+- Left click: place selected building
+- `R`: rotate direction
+- Eraser toggle: delete (core cannot be deleted)
+- Right click: open side inspector for building info
+- Mouse wheel: zoom in/out
+- Middle mouse drag: pan around map
